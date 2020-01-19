@@ -65,8 +65,8 @@ def refresh_feeds(db_if):
         if ('status' in feed and feed['status'] == 410):
             db_if.update_feed_data(feed_row['feed_id'], "disabled", 1)
             return
-        if ('title' in feed and feed['title'] != feed_row['title']):
-            db_if.update_feed_data(feed_row['feed_id'], "title", feed['title'])
+        if ('title' in feed.feed and feed.feed['title'] != feed_row['title']):
+            db_if.update_feed_data(feed_row['feed_id'], "title", feed.feed['title'])
 
         updated_items = parse_items(db_if, feed_row['feed_id'], feed['entries'])
 
