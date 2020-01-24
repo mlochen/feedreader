@@ -1,0 +1,67 @@
+/* general style */
+
+body {
+    font-size: 12px;
+    font-family: verdana;
+}
+
+
+/* feed list style */
+
+#feed_list {
+    position: absolute;
+    left: 0px;
+    top: 0px;
+    width: 320px;
+    overflow: auto;
+    background: #DDDDDD;
+}
+
+#feed_table {
+    width: 100%;
+    border: 0px;
+    color: #000000;
+}
+
+#feed_list a {
+    color: #000000;
+}
+
+#feed_list a:hover {
+    color: #BB0000;
+}
+
+.active_row {
+    background: #AAAAAA;
+}
+
+.title {
+    font-size: 16px;
+    color: #000000;
+}
+
+
+/* item list style */
+
+.date {
+    color: #444444;
+}
+
+.summary {
+}
+
+.unseen {
+    background: #00AAAA;
+}
+
+#item_list {
+    position: absolute;
+    left: 320px;
+    top: 0px;
+    padding: 10px;
+}
+
+
+/* enclosure list style */
+
+

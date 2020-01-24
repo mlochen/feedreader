@@ -1,63 +1,21 @@
 #!/usr/share/python3
 
 import calendar
+from db_if import db_if
 import feedparser
 import hashlib
 import random
-import sqlite3
 import time
 
 db_path = "./feeds.db"
 min_refresh_time = 30 * 60
 max_refresh_time = 90 * 60
 
-class db_if:
-    """interface to the database"""
-
-    def __init__(self, db_path):
-        self.conn = sqlite3.connect(db_path)
-        self.conn.row_factory = sqlite3.Row
-        self.cursor = self.conn.cursor()
-
-    def get_feeds_due(self):
-        self.cursor.execute("SELECT * FROM feeds WHERE next_retrieval < ?", (int(time.time()),))
-        feeds = self.cursor.fetchall()
-        return feeds
-                
-    def update_feed_data(self, feed_id, key, value):
-        self.cursor.execute("UPDATE feeds SET " + key + " = ? WHERE feed_id = ?", (value, feed_id))
-
-    def add_feed(self, href):
-        values = (None, href, "", 0, 0, 0, False, 0)
-        self.cursor.execute("INSERT INTO feeds VALUES (?, ?, ?, ?, ?, ?, ?, ?)", values)
-
-    def delete_feed(self, feed_id):
-        self.cursor.execute("DELETE FROM enclosures WHERE item_id IN\
-                             SELECT item_id FROM items WHERE feed_id = ?", (feed_id,))
-        self.cursor.execute("DELETE FROM items WHERE feed_id = ?", (feed_id,))
-        self.cursor.execute("DELETE FROM feeds WHERE feed_id = ?", (feed_id,))
-
-    def check_item_exists(self, item_id):
-        self.cursor.execute("SELECT * FROM items WHERE item_id = ?", (item_id,))
-        rows = self.cursor.fetchall()
-        return len(rows) != 0
-
-    def add_item(self, feed_id, item_id, item, enclosures):
-        values = (item_id, feed_id) + item
-        self.cursor.execute("INSERT INTO items VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", values)
-        for enclosure in enclosures:
-            values = (None, item_id) + enclosure
-            self.cursor.execute("INSERT INTO enclosures VALUES (?, ?, ?, ?, ?)", values)
-
-    def commit(self):
-        self.conn.commit()
-
-
 def refresh_feeds(db_if):
     print("refreshing feeds")
     feed_rows = db_if.get_feeds_due()
     for feed_row in feed_rows:
-        print("getting feed")
+        print("getting feed", feed_row["title"])
         feed = feedparser.parse(feed_row['href'])
         if ('status' in feed and feed['status'] == 301):
             db_if.update_feed_data(feed_row['feed_id'], "href", feed['href'])
@@ -80,7 +38,6 @@ def refresh_feeds(db_if):
         if updated_items != 0:
             db_if.update_feed_data(feed_row['feed_id'], "last_activity", time_now)
             db_if.update_feed_data(feed_row['feed_id'], "updated_items", updated_items)
-    db_if.commit()
 
 def parse_items(db_if, feed_id, items):
     updated_items = 0
