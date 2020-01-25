@@ -28,7 +28,7 @@ def get_feed_list(active_feed_id):
     for feed in db.get_feeds(active_feed_id):
         tr_class = ' class="active_row"' if (feed['feed_id'] == active_feed_id) else ''
         feed_id = feed['feed_id']
-        classes = []
+        classes = ["feed_title"]
         if (feed['disabled'] != 0):
             classes.append("disabled")
         if (feed['updated_items'] != 0):
