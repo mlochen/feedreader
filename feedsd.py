@@ -75,6 +75,9 @@ def parse_items(db_if, feed_id, items):
             link = item['link']
         if ('published_parsed' in item):
             published = calendar.timegm(item['published_parsed'])
+        elif (feed_item_id.find("blog.fefe.de") != -1):
+            fefeid = feed_item_id.split("=")[-1]
+            published = int(fefeid, 16) ^ 0xfefec0de
         if ('summary' in item):
             summary = item['summary']
         if ('enclosures' in item):
@@ -104,6 +107,13 @@ def get_enclosures(enclosures):
 
         enclosure_list.append((href, length, type))
     return enclosure_list
+
+def ishex(string):
+    ishex = True
+    for c in string.lower():
+        if (c not in "0123456789abcdef"):
+            ishex = False
+    return ishex
 
 db = db_if(db_path)
 while (True):

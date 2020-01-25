@@ -24,6 +24,10 @@ body {
     background: #222222;
 }
 
+body a {
+    color: #BBFFBB;
+}
+
 .button {
     color: #FFFFFF;
     background: #222222;
@@ -76,17 +80,7 @@ body {
     color: #AAAAAA;
 }
 
-.summary {
-}
-
 .unseen {
-    background: #552222;
-}
-
-
-/* enclosure list style */
-
-.enclosure a {
-    color: #BBFFBB;
+    background: #442222;
 }
 
