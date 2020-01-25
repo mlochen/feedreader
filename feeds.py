@@ -24,6 +24,7 @@ def get_feed_list(active_feed_id):
     s = '<div id="feed_list"><form method="post">'\
         '<table align="center" id="feed_table">'\
         '<tr><th colspan="2">feeds</th></tr>'
+    db.reset_updated_items(active_feed_id)
     for feed in db.get_feeds(active_feed_id):
         tr_class = ' class="active_row"' if (feed['feed_id'] == active_feed_id) else ''
         feed_id = feed['feed_id']
@@ -65,6 +66,7 @@ def get_item_list(feed_id):
                 f'<div class="summary">{summary}</div>'
         s = s + get_enclosure_list(item['item_id'])
         s = s + '</div><hr>\n'
+    db.set_seen(feed_id)
     s = s + '</div>'
     return s
 
@@ -89,8 +91,7 @@ def get_size_string(bytes):
     unit = ["bytes", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB"][log]
     return "%.2f%s" % (value, unit)
 
-db_path = "/srv/http/feeds/feeds.db"
-db = db_if(db_path)
+db = db_if()
 attr = cgi.FieldStorage()
 
 print('''Content-type: text/html
@@ -117,4 +118,6 @@ if ('id' in attr):
     print(get_item_list(feed_id))
 
 print('</body></html>')
+
+db.commit()
 

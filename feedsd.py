@@ -22,7 +22,6 @@ import hashlib
 import random
 import time
 
-db_path = "./feeds.db"
 min_refresh_time = 30 * 60
 max_refresh_time = 90 * 60
 
@@ -52,7 +51,7 @@ def refresh_feeds(db_if):
         
         if updated_items != 0:
             db_if.update_feed_data(feed_row['feed_id'], "last_activity", time_now)
-            db_if.update_feed_data(feed_row['feed_id'], "updated_items", updated_items)
+            db_if.add_updated_items(feed_row['feed_id'], updated_items)
 
 def parse_items(db_if, feed_id, items):
     updated_items = 0
@@ -115,7 +114,8 @@ def ishex(string):
             ishex = False
     return ishex
 
-db = db_if(db_path)
+db = db_if()
 while (True):
     refresh_feeds(db)
+    db.commit()
     time.sleep(60)

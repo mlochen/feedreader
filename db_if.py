@@ -18,20 +18,61 @@
 import sqlite3
 import time
 
+db_path = "/srv/http/feeds/feeds.db"
+
 class db_if:
     """interface to the database"""
 
-    def __init__(self, db_path):
+    def __init__(self):
         self.conn = sqlite3.connect(db_path)
         self.conn.row_factory = sqlite3.Row
         self.cursor = self.conn.cursor()
+        self.cursor.execute("CREATE TABLE IF NOT EXISTS "\
+                            "feeds (feed_id INTEGER PRIMARY KEY,"\
+                                   "href VARCHAR,"\
+                                   "title VARCHAR,"\
+                                   "last_retrieval TIMESTAMP,"\
+                                   "next_retrieval TIMESTAMP,"\
+                                   "last_activity TIMESTAMP,"\
+                                   "disabled BOOLEAN,"\
+                                   "updated_items INTEGER)")
+        self.cursor.execute("CREATE TABLE IF NOT EXISTS "\
+                            "items (item_id VARCHAR PRIMARY KEY,"\
+                                   "feed_id INTEGER,"\
+                                   "retrieved TIMESTAMP,"\
+                                   "seen BOOLEAN,"\
+                                   "author VARCHAR,"\
+                                   "title VARCHAR,"\
+                                   "feed_item_id VARCHAR,"\
+                                   "link VARCHAR,"\
+                                   "published TIMESTAMP,"\
+                                   "summary VARCHAR,"\
+                                   "FOREIGN KEY(feed_id) REFERENCES feeds(feed_id))")
+        self.cursor.execute("CREATE TABLE IF NOT EXISTS "\
+                            "enclosures (enclosure_id INTEGER PRIMARY KEY,"\
+                                   "item_id VARCHAR,"\
+                                   "href VARCHAR,"\
+                                   "length INTEGER,"\
+                                   "type VARCHAR,"\
+                                   "FOREIGN KEY(item_id) REFERENCES items(item_id))")
+        self.cursor.execute("CREATE INDEX IF NOT EXISTS "\
+                            "feed_id ON feeds(feed_id)")
+        self.cursor.execute("CREATE INDEX IF NOT EXISTS "\
+                            "item_id ON items(item_id)")
+        self.cursor.execute("CREATE INDEX IF NOT EXISTS "\
+                            "enclosure_id ON enclosures(enclosure_id)")
 
     def get_feeds(self, feed_id):
-        self.cursor.execute("UPDATE feeds SET updated_items = 0 WHERE feed_id = ?", (feed_id,))
         self.cursor.execute("SELECT * FROM feeds ORDER BY last_activity DESC")
         feeds = self.cursor.fetchall()
-        self.conn.commit()
         return feeds
+
+    def reset_updated_items(self, feed_id):
+        self.cursor.execute("UPDATE feeds SET updated_items = 0 WHERE feed_id = ?", (feed_id,))
+
+    def add_updated_items(self, feed_id, value):
+        self.cursor.execute("UPDATE feeds SET updated_items ="\
+                            "updated_items + ? WHERE feed_id = ?", (value, feed_id))
 
     def get_feeds_due(self):
         self.cursor.execute("SELECT * FROM feeds WHERE next_retrieval < ?", (int(time.time()),))
@@ -39,31 +80,25 @@ class db_if:
         return feeds_due
                 
     def update_feed_data(self, feed_id, key, value):
-        if (key == "updated_items"):
-            self.cursor.execute("UPDATE feeds SET updated_items = "\
-                                "updated_items + ? WHERE feed_id = ?", (value, feed_id))
-        else:
-            self.cursor.execute("UPDATE feeds SET " + key + " = ? WHERE feed_id = ?", (value, feed_id))
-        self.conn.commit()
+        self.cursor.execute("UPDATE feeds SET " + key + " = ? WHERE feed_id = ?", (value, feed_id))
 
     def add_feed(self, href):
         values = (None, href, "", 0, 0, 0, False, 0)
         self.cursor.execute("INSERT INTO feeds VALUES (?, ?, ?, ?, ?, ?, ?, ?)", values)
-        self.conn.commit()
 
     def delete_feed(self, feed_id):
         self.cursor.execute("DELETE FROM enclosures WHERE item_id IN "\
                             "(SELECT item_id FROM items WHERE feed_id = ?)", (feed_id,))
         self.cursor.execute("DELETE FROM items WHERE feed_id = ?", (feed_id,))
         self.cursor.execute("DELETE FROM feeds WHERE feed_id = ?", (feed_id,))
-        self.conn.commit()
 
     def get_feed_items(self, feed_id):
         self.cursor.execute("SELECT * FROM items WHERE feed_id = ? ORDER BY published DESC LIMIT 100", (feed_id,))
         items = self.cursor.fetchall()
-        self.cursor.execute("UPDATE items SET seen = TRUE WHERE feed_id = ?", (feed_id,))
-        self.conn.commit()
         return items
+
+    def set_seen(self, feed_id):
+        self.cursor.execute("UPDATE items SET seen = TRUE WHERE feed_id = ?", (feed_id,))
 
     def get_enclosures(self, item_id):
         self.cursor.execute("SELECT * FROM enclosures WHERE item_id = ?", (item_id,))
@@ -81,4 +116,7 @@ class db_if:
         for enclosure in enclosures:
             values = (None, item_id) + enclosure
             self.cursor.execute("INSERT INTO enclosures VALUES (?, ?, ?, ?, ?)", values)
+
+    def commit(self):
         self.conn.commit()
+
