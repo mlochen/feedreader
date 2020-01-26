@@ -57,6 +57,10 @@ body a {
     color: #BBFFBB;
 }
 
+.feed_title {
+    width: 100%;
+}
+
 .active_row {
     background: #444444;
 }

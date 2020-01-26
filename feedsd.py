@@ -82,8 +82,10 @@ def parse_items(db_if, feed_id, items):
         if ('enclosures' in item):
             enclosures = get_enclosures(item['enclosures'])
 
-        item_string = str.encode(feed_item_id + author + title + link + str(published) + summary)
-        item_hash = hashlib.sha256(item_string).hexdigest()
+        item_string = feed_item_id + author + title + link + str(published) + summary
+        for enclosure in enclosures:
+            item_string = item_string + enclosure[0] + str(enclosure[1]) + enclosure[2]
+        item_hash = hashlib.sha256(str.encode(item_string)).hexdigest()
         item_tuple = (int(time.time()), False, author, title, feed_item_id, link, published, summary)
         if not db_if.check_item_exists(item_hash):
             db_if.add_item(feed_id, item_hash, item_tuple, enclosures)
