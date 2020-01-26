@@ -1,4 +1,4 @@
-#!/usr/share/python3
+#!/usr/bin/env python3
 
 # Copyright (C) 2020 Marco Lochen
 
@@ -18,7 +18,7 @@
 import sqlite3
 import time
 
-db_path = "/srv/http/feeds/feeds.db"
+db_path = "/var/www/feedreader/feeds.db"
 
 class db_if:
     """interface to the database"""
