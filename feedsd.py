@@ -16,42 +16,44 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import calendar
-from db_if import db_if
+from db_if import FeedDBInterface
 import feedparser
 import hashlib
 import random
 import time
 
-min_refresh_time = 30 * 60
-max_refresh_time = 90 * 60
+MIN_REFRESH_TIME = 30 * 60
+MAX_REFRESH_TIME = 90 * 60
 
 def refresh_feeds(db_if):
     print("refreshing feeds")
     feed_rows = db_if.get_feeds_due()
     for feed_row in feed_rows:
+        feed_id = feed_row['feed_id']
         print("getting feed", feed_row["title"])
         feed = feedparser.parse(feed_row['href'])
         if ('status' in feed and feed['status'] == 301):
-            db_if.update_feed_data(feed_row['feed_id'], "href", feed['href'])
+            db_if.update_feed_data(feed_id, "href", feed['href'])
             return
         if ('status' in feed and feed['status'] == 410):
-            db_if.update_feed_data(feed_row['feed_id'], "disabled", 1)
+            db_if.update_feed_data(feed_id, "disabled", 1)
             return
         if ('title' in feed.feed and feed.feed['title'] != feed_row['title']):
-            db_if.update_feed_data(feed_row['feed_id'], "title", feed.feed['title'])
+            db_if.update_feed_data(feed_id, "title", feed.feed['title'])
 
-        updated_items = parse_items(db_if, feed_row['feed_id'], feed['entries'])
+        updated_items = parse_items(db_if, feed_id, feed['entries'])
 
         print("updated items", updated_items)
         time_now = int(time.time())
-        next_retrieval = time_now + random.randrange(min_refresh_time, max_refresh_time)
+        next_retrieval = time_now + \
+                         random.randrange(MIN_REFRESH_TIME, MAX_REFRESH_TIME)
 
-        db_if.update_feed_data(feed_row['feed_id'], "last_retrieval", time_now)
-        db_if.update_feed_data(feed_row['feed_id'], "next_retrieval", next_retrieval)
+        db_if.update_feed_data(feed_id, "last_retrieval", time_now)
+        db_if.update_feed_data(feed_id, "next_retrieval", next_retrieval)
         
         if updated_items != 0:
-            db_if.update_feed_data(feed_row['feed_id'], "last_activity", time_now)
-            db_if.add_updated_items(feed_row['feed_id'], updated_items)
+            db_if.update_feed_data(feed_id, "last_activity", time_now)
+            db_if.add_updated_items(feed_id, updated_items)
 
 def parse_items(db_if, feed_id, items):
     updated_items = 0
@@ -82,11 +84,14 @@ def parse_items(db_if, feed_id, items):
         if ('enclosures' in item):
             enclosures = get_enclosures(item['enclosures'])
 
-        item_string = feed_item_id + author + title + link + str(published) + summary
+        item_string = feed_item_id + author + title + \
+                      link + str(published) + summary
         for enclosure in enclosures:
-            item_string = item_string + enclosure[0] + str(enclosure[1]) + enclosure[2]
+            item_string = item_string + enclosure[0] + \
+                          str(enclosure[1]) + enclosure[2]
         item_hash = hashlib.sha256(str.encode(item_string)).hexdigest()
-        item_tuple = (int(time.time()), False, author, title, feed_item_id, link, published, summary)
+        item_tuple = (int(time.time()), False, author, title,
+                      feed_item_id, link, published, summary)
         if not db_if.check_item_exists(item_hash):
             db_if.add_item(feed_id, item_hash, item_tuple, enclosures)
             updated_items = updated_items + 1
@@ -109,14 +114,7 @@ def get_enclosures(enclosures):
         enclosure_list.append((href, length, type))
     return enclosure_list
 
-def ishex(string):
-    ishex = True
-    for c in string.lower():
-        if (c not in "0123456789abcdef"):
-            ishex = False
-    return ishex
-
-db = db_if()
+db = FeedDBInterface()
 while (True):
     refresh_feeds(db)
     db.commit()

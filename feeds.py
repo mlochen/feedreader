@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from db_if import db_if
+from db_if import FeedDBInterface
 import cgi
 import math
 import time
@@ -26,7 +26,9 @@ def get_feed_list(active_feed_id):
         '<tr><th colspan="2">feeds</th></tr>'
     db.reset_updated_items(active_feed_id)
     for feed in db.get_feeds(active_feed_id):
-        tr_class = ' class="active_row"' if (feed['feed_id'] == active_feed_id) else ''
+        tr_class = ''
+        if (feed['feed_id'] == active_feed_id):
+            tr_class = ' class="active_row"'
         feed_id = feed['feed_id']
         classes = ["feed_title"]
         if (feed['disabled'] != 0):
@@ -41,11 +43,12 @@ def get_feed_list(active_feed_id):
         s = s + f'<tr{tr_class}><td>'\
                 f'<input name="del" value="{feed_id}" type="checkbox"></td>'\
                 f'<td class="{" ".join(classes)}">'\
-                f'<a href="/cgi-bin/feeds.py?id={feed_id}">{title}{updated_items}</a>'\
-                f'</td></tr>\n'
+                f'<a href="/cgi-bin/feeds.py?id={feed_id}">'\
+                f'{title}{updated_items}</a></td></tr>\n'
     s = s + '</table>'\
             '<input type="submit" class="button" value="delete"></form>'\
-            '<form method="post"><input name="add" class="button" type="text">'\
+            '<form method="post">'\
+            '<input name="add" class="button" type="text">'\
             '<input type="submit" class="button" value="add"></form>'\
             '</div>'
     return s
@@ -57,7 +60,8 @@ def get_item_list(feed_id):
         link = item['link']
         author = item['author'] + " - " if (item['author'] != "") else ""
         title = item['title']
-        timestring = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime(item['published']))
+        timestring = time.strftime("%Y-%m-%d %H:%M:%S", \
+                     time.gmtime(item['published']))
         summary = item['summary']
 
         s = s + f'<div class="{classes}">'\
@@ -80,26 +84,31 @@ def get_enclosure_list(item_id):
             length = enclosure['length']
             type = enclosure['type']
 
-            s = s + f'<li class="enclosure"><a href="{href}">{href.split("/")[-1]}</a>'\
+            s = s + f'<li class="enclosure">'\
+                    f'<a href="{href}">{href.split("/")[-1]}</a>'\
                     f' ({get_size_string(length)} {type})</li>'
         s = s + '</ul>'
     return s
 
 def get_size_string(bytes):
+    if (not isinstance(bytes, int)):
+        return ""
     log = math.floor(math.log(bytes, 1024))
     value = bytes / math.pow(1024, log)
-    unit = ["bytes", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB"][log]
+    unit = ["bytes", "KiB", "MiB", "GiB", "TiB",
+            "PiB", "EiB", "ZiB", "YiB"][log]
     return "%.2f%s" % (value, unit)
 
-db = db_if()
+db = FeedDBInterface()
 attr = cgi.FieldStorage()
 
-print('''Content-type: text/html
+print("""Content-type: text/html
 
 <!DOCTYPE HTML><html lang="en"><head><title>My Feeds</title>
 <link rel="stylesheet" type="text/css" href="/feeds/style.css">
 <link rel="icon" type="image/png" href="/feeds/icon.png">
-<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"></head><body>''')
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+</head><body>""")
 
 if ('add' in attr):
     db.add_feed(attr.getfirst("add"))
