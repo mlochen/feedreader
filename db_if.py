@@ -104,10 +104,20 @@ class FeedDBInterface:
     def get_feed_items(self, feed_id):
         self.cursor.execute("SELECT item_id, feed_id, max(retrieved), seen,"
                             "author, title, feed_item_id, link, published,"
-                            "summary FROM items "
+                            "summary, count() as count "
+                            "FROM items "
                             "WHERE feed_id = ? "
                             "GROUP BY feed_item_id "
                             "ORDER BY published DESC LIMIT 100", (feed_id,))
+        items = self.cursor.fetchall()
+        return items
+
+    def get_related_feed_items(self, feed_id, item_id):
+        self.cursor.execute("SELECT * FROM items "
+                            "WHERE feed_id = ? AND feed_item_id IN "
+                            "(SELECT feed_item_id FROM items "
+                            "WHERE item_id = ?)"
+                            "ORDER BY retrieved DESC", (feed_id, item_id))
         items = self.cursor.fetchall()
         return items
 

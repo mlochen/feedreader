@@ -63,10 +63,38 @@ def get_item_list(feed_id):
         timestring = time.strftime("%Y-%m-%d %H:%M:%S", \
                      time.gmtime(item['published']))
         summary = item['summary']
+        count = item['count']
+        item_id = item['item_id']
+
+        history = ''
+        if (count > 1):
+            history = f'<a class="history" href="/cgi-bin/feeds.py?'\
+                      f'id={feed_id}&itemid={item_id}">(history)</a>'
 
         s = s + f'<div class="{classes}">'\
-                f'<a class="title" href="{link}">{author}{title}</a><br>'\
-                f'<div class="date">{timestring}</div><br>'\
+                f'<a class="title" href="{link}">{author}{title}</a>'\
+                f'{history}<br><div class="date">{timestring}</div><br>'\
+                f'<div class="summary">{summary}</div>'
+        s = s + get_enclosure_list(item['item_id'])
+        s = s + '</div><hr>\n'
+    db.set_seen(feed_id)
+    s = s + '</div>'
+    return s
+
+def get_related_item_list(feed_id, item_id):
+    s = '<div id="item_list">'
+    for item in db.get_related_feed_items(feed_id, item_id):
+        classes = "item unseen" if (item['seen'] == 0) else "item"
+        link = item['link']
+        author = item['author'] + " - " if (item['author'] != "") else ""
+        title = item['title']
+        timestring = time.strftime("%Y-%m-%d %H:%M:%S", \
+                     time.gmtime(item['published']))
+        summary = item['summary']
+
+        s = s + f'<div class="{classes}">'\
+                f'<a class="title" href="{link}">{author}{title}</a>'\
+                f'<br><div class="date">{timestring}</div><br>'\
                 f'<div class="summary">{summary}</div>'
         s = s + get_enclosure_list(item['item_id'])
         s = s + '</div><hr>\n'
@@ -124,7 +152,10 @@ if ('id' in attr):
 print(get_feed_list(feed_id))
 
 if ('id' in attr):
-    print(get_item_list(feed_id))
+    if ('itemid' in attr):
+        print(get_related_item_list(feed_id, attr['itemid'].value))
+    else:
+        print(get_item_list(feed_id))
 
 print('</body></html>')
 
