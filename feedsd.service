@@ -1,0 +1,16 @@
+[Unit]
+Description=feedsd service
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/usr/lib/cgi-bin
+
+ExecStart=/usr/bin/python3 /usr/bin/feedsd.py
+
+Environment=PYTHONPATH=/usr/local/lib/python3/site-packages:/usr/local/lib/python3/dist-packages:/usr/lib/python3/site-packages:/usr/lib/python3/dist-packages PYTHONHASHSEED=random PYTHONOPTIMIZE=1 PYTHONDONTWRITEBYTECODE=1
+
+[Install]
+WantedBy=multi-user.target
