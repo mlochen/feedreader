@@ -76,6 +76,8 @@ def parse_items(db_if, feed_id, items):
             link = item['link']
         if ('published_parsed' in item):
             published = calendar.timegm(item['published_parsed'])
+        elif ('updated_parsed' in item):
+            published = calendar.timegm(item['updated_parsed'])
         elif (feed_item_id.find("blog.fefe.de") != -1):
             fefeid = feed_item_id.split("=")[-1]
             published = int(fefeid, 16) ^ 0xfefec0de
