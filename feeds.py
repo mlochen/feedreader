@@ -119,7 +119,7 @@ def get_enclosure_list(item_id):
     return s
 
 def get_size_string(bytes):
-    if (not isinstance(bytes, int)):
+    if (not isinstance(bytes, int) or bytes == 0):
         return ""
     log = math.floor(math.log(bytes, 1024))
     value = bytes / math.pow(1024, log)
