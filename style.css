@@ -91,3 +91,8 @@ body a {
     background: #442222;
 }
 
+img {
+    width: 240px;
+    height: auto;
+}
+
